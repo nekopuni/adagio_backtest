@@ -1,16 +1,15 @@
-from enum import Enum, unique
 from collections import namedtuple
 from datetime import datetime
-from pandas_datareader.data import DataReader
-
-import quandl
+from enum import Enum, unique
 
 import adagio
+import quandl
 from adagio import keys
 from adagio.utils.logging import get_logger
 from adagio.utils.mongo import get_library
+from pandas_datareader.data import DataReader
 
-from config import *
+from adagio_backtest.config import *
 
 logger = get_logger(name=__name__)
 START_DATE = datetime(1970, 1, 1)

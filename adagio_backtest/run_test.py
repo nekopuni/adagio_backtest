@@ -1,7 +1,7 @@
 import adagio
 from adagio import keys
 
-from config import *
+from adagio_backtest.config import *
 
 adagio.AdagioConfig.quandl_token = QUANDL_TOKEN
 

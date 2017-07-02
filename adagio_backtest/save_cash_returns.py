@@ -1,18 +1,17 @@
-from enum import Enum, unique
 from datetime import datetime
-
-import pandas as pd
-from pandas_datareader.data import DataReader
-import quandl
+from enum import Enum, unique
 
 import adagio
+import pandas as pd
+import quandl
 from adagio import keys
 from adagio.utils.const import DATA_DIRECTORY
 from adagio.utils.date import date_shift
 from adagio.utils.logging import get_logger
 from adagio.utils.mongo import get_library
+from pandas_datareader.data import DataReader
 
-from config import *
+from adagio_backtest.config import *
 
 logger = get_logger(name=__name__)
 START_DATE = datetime(1677, 9, 23)
