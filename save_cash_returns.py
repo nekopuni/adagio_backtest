@@ -23,13 +23,12 @@ adagio.AdagioConfig.quandl_token = QUANDL_TOKEN
 class CashFile(Enum):
     USD_NYFED_DF = "M13009USM156NNBR"
     USD_3M_TBILL = "DTB3"
-    USD_3M_LIBOR = "FRED/USD3MTD156N"
-    USD_3M_LIBOR_FRED = "USD3MTD156N"
+    USD_3M_LIBOR = "USD3MTD156N"
     EUR_3M_IB_RATE = "IR3TIB01DEM156N"
     EUR_3M_EURIBOR = "BOE/IUDERB3"
     GER_BANKRATE = "FRED/M13015DEM156NNBR"
-    JPY_3M_LIBOR = "FRED/JPY3MTD156N"
-    GBP_3M_LIBOR = "FRED/GBP3MTD156N"
+    JPY_3M_LIBOR = "JPY3MTD156N"
+    GBP_3M_LIBOR = "GBP3MTD156N"
     GBP_3M_LIBOR_M = "LIOR3MUKM"
     GBP_POLICY_RATE = "BOERUKM"
 
@@ -60,7 +59,7 @@ def get_ann_days(convention):
     return float(days)
 
 
-def get_cash_return(currency):
+def get_cash_rate(currency):
     """ Return historical cash rate for a given currency name """
     func_map = {
         "USD": load_usd,
@@ -69,6 +68,11 @@ def get_cash_return(currency):
         "GBP": load_gbp,
     }
     cash_rate = func_map[currency]()
+    return cash_rate
+
+
+def to_cash_returns(cash_rate, currency):
+    """ Convert historical cash rate to returns """
     n_days = count_days(cash_rate)
     day_fraction = n_days / get_ann_days(DayCount[currency].value)
 
@@ -81,7 +85,7 @@ def load_usd():
     """ Return cash rate for USD """
     nyfed_df = DataReader(CashFile.USD_NYFED_DF.value, "fred", START_DATE)
     tbill = DataReader(CashFile.USD_3M_TBILL.value, "fred", START_DATE)
-    libor = DataReader(CashFile.USD_3M_LIBOR_FRED.value, "fred", START_DATE)
+    libor = DataReader(CashFile.USD_3M_LIBOR.value, "fred", START_DATE)
 
     data = (pd.concat((to_monthend(nyfed_df[:"1953"]),
                        tbill[:"1985"],
@@ -125,7 +129,7 @@ def load_eur():
 
 def load_jpy():
     """ Return cash rate for JPY """
-    libor = quandl.get(CashFile.JPY_3M_LIBOR.value)
+    libor = DataReader(CashFile.JPY_3M_LIBOR.value, 'fred', START_DATE)
 
     parser = lambda d: date_shift(datetime.strptime(d, "%Y/%m"),
                                   "+BMonthEnd")
@@ -141,7 +145,7 @@ def load_jpy():
 
 def load_gbp():
     """ Return cash rate for GBP """
-    libor = quandl.get(CashFile.GBP_3M_LIBOR.value)
+    libor = DataReader(CashFile.GBP_3M_LIBOR.value, 'fred', START_DATE)
     libor_m = DataReader(CashFile.GBP_3M_LIBOR_M.value, "fred", START_DATE)
     policy_rate = DataReader(CashFile.GBP_POLICY_RATE.value, "fred", START_DATE)
 
@@ -161,6 +165,13 @@ if __name__ == '__main__':
 
     for ccy in currencies:
         logger.info('Saving cash returns for {}'.format(ccy))
-        cash_return = get_cash_return(ccy)
+
+        # get cash rates
+        cash_rate = get_cash_rate(ccy)
+        symbol = cash_rate.name
+        library.write(symbol, cash_rate)
+
+        # get cash returns
+        cash_return = to_cash_returns(cash_rate, ccy)
         symbol = cash_return.name
         library.write(symbol, cash_return)
