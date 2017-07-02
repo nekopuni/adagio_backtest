@@ -46,7 +46,7 @@ def to_monthend(df):
 
 
 def count_days(df):
-    tmp = pd.Series(df.index, index=df.index)
+    tmp = pd.Series(df.index.date, index=df.index)
     delta = tmp - tmp.shift()
     delta = delta.fillna(0).apply(lambda x: x.days)
     return delta
