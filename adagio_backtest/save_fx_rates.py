@@ -42,7 +42,8 @@ def get_fx_rates(currency):
     fx_rates_info = FxRatesInfo[currency].value
 
     if fx_rates_info.data_source == 'quandl':
-        fx_rates = quandl.get(fx_rates_info.data_name)
+        fx_rates = quandl.get(fx_rates_info.data_name,
+                              api_key=adagio.AdagioConfig.quandl_token)
         fx_rates = fx_rates['Rate']
     else:
         fx_rates = DataReader(fx_rates_info.data_name,
