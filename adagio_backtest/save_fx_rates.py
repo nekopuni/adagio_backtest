@@ -9,7 +9,7 @@ from adagio.utils.logging import get_logger
 from adagio.utils.mongo import get_library
 from pandas_datareader.data import DataReader
 
-from adagio_backtest.config import *
+from config import *
 
 logger = get_logger(name=__name__)
 START_DATE = datetime(1970, 1, 1)

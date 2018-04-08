@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum, unique
+from os.path import join
 
 import adagio
 import pandas as pd
@@ -11,7 +12,7 @@ from adagio.utils.logging import get_logger
 from adagio.utils.mongo import get_library
 from pandas_datareader.data import DataReader
 
-from adagio_backtest.config import *
+from config import *
 
 logger = get_logger(name=__name__)
 START_DATE = datetime(1677, 9, 23)
@@ -86,17 +87,18 @@ def load_usd():
     tbill = DataReader(CashFile.USD_3M_TBILL.value, "fred", START_DATE)
     libor = DataReader(CashFile.USD_3M_LIBOR.value, "fred", START_DATE)
 
-    data = (pd.concat((to_monthend(nyfed_df[:"1953"]),
-                       tbill[:"1985"],
-                       libor),
+    data = (pd.concat((to_monthend(nyfed_df[:"1953"]).fillna(method="pad"),
+                       tbill['1954':"1985"].fillna(method="pad"),
+                       libor['1986':].fillna(method="pad")),
                       axis=1)
-            .sum(axis=1).fillna(method="pad").rename("cash_rate_usd"))
+            .sum(axis=1).rename("cash_rate_usd"))
     return data
 
 
 def load_eur():
     """ Return cash rate for EUR and DEM prior to the introduction of EUR """
-    bank_rate = quandl.get(CashFile.GER_BANKRATE.value)
+    bank_rate = quandl.get(CashFile.GER_BANKRATE.value,
+                           api_key=adagio.AdagioConfig.quandl_token)
 
     ww2_data = pd.DataFrame([4.0, 3.5, 5.0],
                             index=[datetime(1936, 6, 30),
@@ -108,21 +110,22 @@ def load_eur():
 
     parser = lambda d: date_shift(datetime.strptime(d, "%Y-%m"),
                                   "+BMonthEnd")
-    filename = DATA_DIRECTORY + "cash_rate/eur/BBK01.SU0112.csv"
+    filename = join(DATA_DIRECTORY, 'cash_rate', 'eur', 'BBK01.SU0112.csv')
     discount_rate = pd.read_csv(filename,
                                 skiprows=[1, 2, 3, 4], index_col=0,
                                 usecols=[0, 1], engine="python", skipfooter=95,
                                 parse_dates=True, date_parser=parser)
     ib_rate = DataReader(CashFile.EUR_3M_IB_RATE.value, "fred", START_DATE)
-    libor = quandl.get(CashFile.EUR_3M_EURIBOR.value)
+    libor = quandl.get(CashFile.EUR_3M_EURIBOR.value,
+                       api_key=adagio.AdagioConfig.quandl_token)
 
-    data = (pd.concat((bank_rate[:"1936-06"],
+    data = (pd.concat((bank_rate[:"1936-06"].fillna(method="pad"),
                        ww2_data,
-                       discount_rate[:"1959"],
-                       to_monthend(ib_rate[:"1998"]),
-                       libor),
+                       discount_rate[:"1959"].fillna(method="pad"),
+                       to_monthend(ib_rate['1960':"1998"].fillna(method="pad")),
+                       libor['1999':].fillna(method="pad")),
                       axis=1)
-            .sum(axis=1).fillna(method="pad").rename("cash_rate_eur"))
+            .sum(axis=1).rename("cash_rate_eur"))
     return data
 
 
@@ -132,13 +135,14 @@ def load_jpy():
 
     parser = lambda d: date_shift(datetime.strptime(d, "%Y/%m"),
                                   "+BMonthEnd")
-    filename = DATA_DIRECTORY + "cash_rate/jpy/discount_rate.csv"
+    filename = join(DATA_DIRECTORY, 'cash_rate', 'jpy', 'discount_rate.csv')
     discount_rate = pd.read_csv(filename, index_col=0, usecols=[0, 1],
                                 parse_dates=True, date_parser=parser)
-    data = (pd.concat((discount_rate["1882-10":"1985-12"].astype("float"),
-                       libor),
+    data = (pd.concat((discount_rate["1882-10":"1985-12"].astype("float")
+                       .fillna(method="pad"),
+                       libor['1986':].fillna(method="pad")),
                       axis=1)
-            .sum(axis=1).fillna(method="pad").rename("cash_rate_jpy"))
+            .sum(axis=1).rename("cash_rate_jpy"))
     return data
 
 
@@ -148,11 +152,11 @@ def load_gbp():
     libor_m = DataReader(CashFile.GBP_3M_LIBOR_M.value, "fred", START_DATE)
     policy_rate = DataReader(CashFile.GBP_POLICY_RATE.value, "fred", START_DATE)
 
-    data = (pd.concat((policy_rate[:"1969-12"],
-                       libor_m[:"1985"],
-                       libor),
+    data = (pd.concat((policy_rate[:"1969-12"].fillna(method="pad"),
+                       libor_m['1970':"1985"].fillna(method="pad"),
+                       libor.fillna(method="pad")),
                       axis=1)
-            .sum(axis=1).fillna(method="pad").rename("cash_rate_gbp"))
+            .sum(axis=1).rename("cash_rate_gbp"))
     return data
 
 
