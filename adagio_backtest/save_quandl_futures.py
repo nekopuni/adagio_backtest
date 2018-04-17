@@ -9,21 +9,12 @@ from config import QUANDL_TOKEN
 logger = get_logger(name=__name__)
 adagio.AdagioConfig.quandl_token = QUANDL_TOKEN
 
-
 if __name__ == '__main__':
 
     library = get_library(keys.backtest)
 
     for futures in FuturesInfo:
-        logger.info('Running backtest for {}'.format(futures.name))
-        futures_info = futures.value
-
-        longonly_params = {
-            keys.lo_ticker: futures.name,
-            keys.backtest_ccy: futures_info.contract_ccy,
-        }
-
+        logger.info('Saving futures contracts for {}'.format(futures.name))
         engine = adagio.Engine()
-        engine.add(adagio.LongOnly(**longonly_params))
-        engine.backtest()
-        library.write(engine.symbol, engine, metadata=engine.all_params)
+        engine.add(adagio.LongOnly(lo_ticker=futures.name))
+        engine.update_database()
